@@ -6,7 +6,11 @@ await mkdir('dist', { recursive: true })
 await build({
   entryPoints: ['src/app.js'],
   bundle: true,
-  minify: true,
+  // @xterm/xterm 6.0.0 is already identifier-minified. Re-mangling it can
+  // corrupt closures in mode-query handlers used by full-screen TUIs.
+  minifyIdentifiers: false,
+  minifySyntax: true,
+  minifyWhitespace: true,
   outdir: 'dist',
   entryNames: 'app',
   assetNames: 'assets/[name]-[hash]',
