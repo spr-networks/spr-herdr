@@ -1,6 +1,7 @@
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { resolvePluginBase } from './plugin-base.js'
+import { ensureHerdrMouseCapture } from './mouse-capture.js'
 import './app.css'
 
 const statusElement = document.getElementById('status')
@@ -200,8 +201,11 @@ const poll = async () => {
       cursor = readCursor(response, 'X-Terminal-Next-Cursor', cursor)
       if (response.status === 200) {
         const bytes = new Uint8Array(await response.arrayBuffer())
-        if (bytes.length > 0) terminal.write(bytes)
+        if (bytes.length > 0) {
+          await new Promise((resolve) => terminal.write(bytes, resolve))
+        }
       }
+      ensureHerdrMouseCapture(terminal)
       setStatus('connected', 'Connected')
       backoff = 250
     } catch (error) {
@@ -247,6 +251,7 @@ window.addEventListener('beforeunload', () => {
 const start = async () => {
   await waitForTerminalFont()
   terminal.open(terminalElement)
+  ensureHerdrMouseCapture(terminal)
   window.parent.postMessage(JSON.stringify({ type: 'spr:ready' }), '*')
   await bootstrap()
 }

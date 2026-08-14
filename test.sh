@@ -58,6 +58,7 @@ grep -Fq 'name = "terminal"' config/config.toml
 grep -Fq 'accent = "blue"' config/config.toml
 grep -Fq 'pane_gaps = false' config/config.toml
 grep -Fq 'pane_scrollbars = false' config/config.toml
+grep -Fq 'ensureHerdrMouseCapture(terminal)' frontend/src/app.js
 grep -Fq "background: '#1a1b26'" frontend/src/app.js
 grep -Fq 'format = "[$directory$git_branch$git_status]($style)$character"' config/starship.toml
 grep -Fq 'if [ ! -e /home/herdr/.bashrc ]; then' scripts/spr-herdr-init
