@@ -61,6 +61,12 @@ grep -Fq "background: '#1a1b26'" frontend/src/app.js
 grep -Fq 'format = "[$directory$git_branch$git_status]($style)$character"' config/starship.toml
 grep -Fq 'if [ ! -e /home/herdr/.bashrc ]; then' scripts/spr-herdr-init
 grep -Fq 'if [ ! -e /home/herdr/.config/starship.toml ]; then' scripts/spr-herdr-init
+grep -Fq 'cosign attest --yes --type slsaprovenance1' .github/workflows/docker-image.yml
+grep -Fq 'cosign verify-attestation --type slsaprovenance1' .github/workflows/docker-image.yml
+if grep -Fq 'uses: actions/attest-build-provenance' .github/workflows/docker-image.yml; then
+  echo "spr-herdr must publish the Cosign registry attestation expected by superd" >&2
+  exit 1
+fi
 
 echo 'e65d5843cf1281526c5c4d6d44f0c3a1672efc8c8903d4c7ee973396b5e388db  frontend/src/fonts/JetBrainsMonoNerdFont-Regular.woff2' | shasum -a 256 -c - >/dev/null
 echo '19f08a54ba2f3584fb3640f47ee28d2d90d75d581cc714006417dd65e32a1415  frontend/src/fonts/JetBrainsMonoNerdFont-Bold.woff2' | shasum -a 256 -c - >/dev/null
