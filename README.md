@@ -3,10 +3,8 @@
 Run [Herdr](https://herdr.dev/) inside an SPR-managed KVM microVM and use its
 terminal UI directly from the sandboxed SPR plugin pane.
 
-The image pins the official Herdr `0.8.0` Linux binaries for amd64 and arm64 by
-SHA-256. Herdr runs as an unprivileged user with a persistent home directory,
-an ordinary Bash workspace, Git/SSH tooling, and SPR-managed `wan` + `dns`
-egress. No TCP port is published on the router or plugin network.
+NOTE: This is an autocoded LLM generated plugin for Herdr. 
+
 
 ## Sandboxed terminal UI
 
