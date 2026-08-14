@@ -1,0 +1,58 @@
+#!/bin/bash
+# Prepare the persistent Herdr home, start the vsock bridge, and drop all
+# privileges before the browser-terminal service launches Herdr.
+set -euo pipefail
+
+if [ "$(id -u)" -ne 0 ]; then
+    echo "spr-herdr init must start as root" >&2
+    exit 1
+fi
+
+plugin_socket="${SPR_KRUN_PLUGIN_SOCKET:-/run/spr-herdr/ui.sock}"
+case "$plugin_socket" in
+    /*) ;;
+    *) echo "SPR_KRUN_PLUGIN_SOCKET must be absolute" >&2; exit 64 ;;
+esac
+
+install -d -m 0750 -o herdr -g herdr \
+    /home/herdr \
+    /home/herdr/workspace \
+    /home/herdr/.config \
+    /home/herdr/.config/herdr \
+    /home/herdr/.local \
+    /home/herdr/.cache
+install -d -m 0700 -o herdr -g herdr /home/herdr/.ssh
+install -d -m 0755 -o herdr -g herdr "$(dirname "$plugin_socket")"
+
+config_path="${HERDR_CONFIG_PATH:-/home/herdr/.config/herdr/config.toml}"
+if [ ! -e "$config_path" ]; then
+    install -m 0600 -o herdr -g herdr /usr/share/spr-herdr/config.toml "$config_path"
+fi
+if [ ! -e /home/herdr/.bashrc ]; then
+    install -m 0644 -o herdr -g herdr /usr/share/spr-herdr/bashrc /home/herdr/.bashrc
+fi
+if [ ! -e /home/herdr/.config/starship.toml ]; then
+    install -m 0644 -o herdr -g herdr /usr/share/spr-herdr/starship.toml /home/herdr/.config/starship.toml
+fi
+
+export HOME=/home/herdr
+export SHELL=/bin/bash
+export TERM="${TERM:-xterm-256color}"
+export COLORTERM="${COLORTERM:-truecolor}"
+export HERDR_CONFIG_PATH="$config_path"
+export HERDR_DISABLE_SOUND="${HERDR_DISABLE_SOUND:-1}"
+
+exec /usr/local/bin/spr-krun-init \
+    setpriv \
+      --bounding-set=-all \
+      --inh-caps=-all \
+      --ambient-caps=-all \
+      --reuid=herdr \
+      --regid=herdr \
+      --init-groups \
+      -- \
+      /usr/local/bin/spr-herdr-terminal \
+        -socket "$plugin_socket" \
+        -command /usr/local/bin/herdr \
+        -workdir /home/herdr/workspace \
+        -version "${HERDR_VERSION:-unknown}"

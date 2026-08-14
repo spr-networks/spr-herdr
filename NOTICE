@@ -1,0 +1,16 @@
+spr-herdr packages these unmodified or separately maintained components:
+
+- Herdr 0.8.0 (https://github.com/herdrdev/herdr), Apache License 2.0.
+  The distributed binary is the official upstream Linux release asset built
+  from commit 346411fa21afd297f5ed3b3fa56f9e3fbf7654b7. spr-herdr is not
+  affiliated with or endorsed by the Herdr project.
+- xterm.js and @xterm/addon-fit (https://github.com/xtermjs/xterm.js), MIT.
+- JetBrainsMono Nerd Font 3.5.0
+  (https://github.com/ryanoasis/nerd-fonts), SIL Open Font License 1.1.
+  The bundled WOFF2 files are losslessly compressed from the official regular
+  and bold JetBrainsMono Nerd Font release files.
+- Starship 1.26.0 (https://github.com/starship/starship), ISC License.
+- creack/pty (https://github.com/creack/pty), MIT.
+
+License texts are included in LICENSES/. The spr-herdr integration code is
+licensed under the repository's MIT LICENSE.

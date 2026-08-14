@@ -1,0 +1,31 @@
+# SPR packages Herdr as an immutable image. Upgrade the plugin image instead of
+# asking the in-guest binary to replace itself.
+onboarding = true
+
+[theme]
+# Match Omarchy's Herdr setup: use the outer terminal's ANSI palette and keep
+# active tabs readable against the palette's black/background color.
+name = "terminal"
+
+[theme.custom]
+panel_bg = "black"
+
+[terminal]
+default_shell = "/bin/bash"
+shell_mode = "non_login"
+new_cwd = "follow"
+
+[ui]
+accent = "blue"
+pane_gaps = false
+pane_scrollbars = false
+confirm_close = false
+prompt_new_tab_name = false
+mouse_capture = true
+
+[update]
+version_check = false
+manifest_check = true
+
+[ui.sound]
+enabled = false

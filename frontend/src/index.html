@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <title>Herdr terminal</title>
+    <link rel="stylesheet" href="./static/app.css" />
+    <script src="./static/app.js" defer></script>
+  </head>
+  <body>
+    <header class="toolbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">›_</span>
+        <span>Herdr</span>
+      </div>
+      <div class="toolbar-actions">
+        <span id="status" class="status" data-state="connecting">Connecting</span>
+        <button id="reconnect" type="button" title="Restart only the attached Herdr client; the background Herdr session stays running">
+          Reattach
+        </button>
+      </div>
+    </header>
+    <main id="terminal-shell">
+      <div id="terminal" aria-label="Herdr terminal"></div>
+    </main>
+    <div id="error" class="error" role="status" hidden></div>
+  </body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "Name": "spr-herdr",
+  "Runtime": "kvm",
+  "UnixPath": "/state/plugins/spr-herdr/socket.sock",
+  "URI": "spr-herdr",
+  "HasUI": true,
+  "Icon": "Terminal",
+  "SandboxedUI": true,
+  "NetworkCapabilities": {
+    "Interface": "spr-herdr",
+    "DeviceMAC": "02:53:50:52:4b:16",
+    "Policies": [
+      "wan",
+      "dns"
+    ],
+    "Groups": [
+      "herdr"
+    ]
+  },
+  "Enabled": true
+}

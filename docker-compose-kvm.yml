@@ -1,0 +1,31 @@
+services:
+  spr-herdr:
+    extends:
+      file: docker-compose.yml
+      service: spr-herdr
+    image: ghcr.io/spr-networks/spr-herdr:latest
+    build: !reset null
+    runtime: ${SPR_KRUN_RUNTIME:-spr-krun}
+    annotations:
+      krun.cpus: "${SPR_KRUN_CPUS:-2}"
+      krun.ram_mib: "${SPR_KRUN_RAM_MIB:-1024}"
+      krun.tap_name: "kruntap0"
+      krun.net_uplink: "eth0"
+      krun.vsock_path: "/state/plugins/spr-herdr/socket.sock"
+      krun.vsock_port: "4040"
+    environment:
+      SPR_KRUN_PLUGIN_SOCKET: /run/spr-herdr/ui.sock
+      SPR_KRUN_VSOCK_PORT: "4040"
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    devices:
+      - "/dev/net/tun:/dev/net/tun"
+
+networks:
+  herdrnet:
+    name: spr-herdr
+    driver_opts:
+      com.docker.network.bridge.name: spr-herdr
+      com.docker.network.bridge.inhibit_ipv4: "true"

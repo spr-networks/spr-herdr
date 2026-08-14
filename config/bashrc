@@ -1,0 +1,5 @@
+# Default interactive shell setup for spr-herdr. This file is installed only
+# when the persistent home does not already contain a user-owned .bashrc.
+if [[ $- == *i* ]] && [[ ${TERM:-} != "dumb" ]] && command -v starship >/dev/null; then
+    eval "$(starship init bash)"
+fi

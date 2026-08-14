@@ -1,0 +1,34 @@
+x-labels:
+  &default-labels
+  org.supernetworks.ci: "true"
+  org.supernetworks.version: ${RELEASE_VERSION:-latest}${RELEASE_CHANNEL:-}
+
+services:
+  spr-herdr:
+    container_name: spr-herdr
+    image: ghcr.io/spr-networks/spr-herdr:latest
+    build:
+      context: "${BUILDCTX:-.}"
+      labels: *default-labels
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      HOME: /home/herdr
+      SHELL: /bin/bash
+      TERM: xterm-256color
+      COLORTERM: truecolor
+      HERDR_CONFIG_PATH: /home/herdr/.config/herdr/config.toml
+      HERDR_DISABLE_SOUND: "1"
+    working_dir: /home/herdr/workspace
+    networks:
+      herdrnet:
+    volumes:
+      - "${SUPERDIR:-/home/spr/super}/configs/plugins/spr-herdr:/home/herdr"
+      - "${SUPERDIR:-/home/spr/super}/state/plugins/spr-herdr:/state/plugins/spr-herdr"
+
+networks:
+  herdrnet:
+    name: spr-herdr
+    driver_opts:
+      com.docker.network.bridge.name: spr-herdr
