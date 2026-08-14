@@ -1,5 +1,7 @@
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
+import { createInputPump } from './input-pump.js'
+import { createMouseInputCoalescer } from './mouse-input.js'
 import { resolvePluginBase } from './plugin-base.js'
 import { ensureHerdrMouseCapture } from './mouse-capture.js'
 import './app.css'
@@ -13,9 +15,6 @@ const encoder = new TextEncoder()
 let cursor = 0
 let stopped = false
 let resizeTimer = null
-let inputTimer = null
-let inputChunks = []
-let inputChain = Promise.resolve()
 let errorTimer = null
 
 const pluginBase = resolvePluginBase({
@@ -99,7 +98,7 @@ const terminal = new Terminal({
   fontWeightBold: 700,
   lineHeight: 1,
   macOptionIsMeta: true,
-  rightClickSelectsWord: true,
+  rightClickSelectsWord: false,
   scrollback: 10000,
   theme: tokyoNight
 })
@@ -146,36 +145,31 @@ if (typeof ResizeObserver === 'function') {
 }
 window.addEventListener('resize', fit)
 
-const queueInput = (bytes) => {
-  inputChunks.push(bytes)
-  if (inputTimer !== null) return
-  inputTimer = setTimeout(() => {
-    inputTimer = null
-    const length = inputChunks.reduce((total, chunk) => total + chunk.length, 0)
-    const body = new Uint8Array(length)
-    let offset = 0
-    for (const chunk of inputChunks) {
-      body.set(chunk, offset)
-      offset += chunk.length
-    }
-    inputChunks = []
-    inputChain = inputChain
-      .then(() => request('terminal/input', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/octet-stream' },
-        body
-      }))
-      .catch((error) => {
-        setStatus('error', 'Input offline')
-        showError(`Input failed: ${error.message}`)
-      })
-  }, 8)
-}
+const inputPump = createInputPump({
+  send: (body) => request('terminal/input', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/octet-stream' },
+    body
+  }),
+  onError: (error) => {
+    setStatus('error', 'Input offline')
+    showError(`Input failed: ${error.message}`)
+  }
+})
 
-terminal.onData((data) => queueInput(encoder.encode(data)))
+const queueInput = (bytes) => inputPump.write(bytes)
+const mouseInput = createMouseInputCoalescer({
+  write: (data) => queueInput(encoder.encode(data))
+})
+
+terminal.onData((data) => mouseInput.write(data))
 terminal.onBinary((data) => {
   const bytes = Uint8Array.from(data, (character) => character.charCodeAt(0) & 0xff)
   queueInput(bytes)
+})
+
+terminalElement.addEventListener('contextmenu', (event) => {
+  if (terminal.modes.mouseTrackingMode !== 'none') event.preventDefault()
 })
 
 terminal.attachCustomKeyEventHandler((event) => {
@@ -197,14 +191,29 @@ const poll = async () => {
   let backoff = 250
   while (!stopped) {
     try {
-      const response = await request(`terminal/output?cursor=${cursor}`)
-      cursor = readCursor(response, 'X-Terminal-Next-Cursor', cursor)
+      const response = await fetch(endpoint(`terminal/output?cursor=${cursor}`), {
+        cache: 'no-store'
+      })
+      const nextCursor = readCursor(response, 'X-Terminal-Next-Cursor', cursor)
+      if (response.status === 409 && response.headers.get('X-Terminal-Reset') === 'required') {
+        cursor = nextCursor
+        terminal.reset()
+        ensureHerdrMouseCapture(terminal)
+        setStatus('connecting', 'Refreshing terminal')
+        await request('terminal/restart', { method: 'POST' })
+        continue
+      }
+      if (!response.ok && response.status !== 204) {
+        const detail = (await response.text()).trim()
+        throw new Error(detail || `HTTP ${response.status}`)
+      }
       if (response.status === 200) {
         const bytes = new Uint8Array(await response.arrayBuffer())
         if (bytes.length > 0) {
           await new Promise((resolve) => terminal.write(bytes, resolve))
         }
       }
+      cursor = nextCursor
       ensureHerdrMouseCapture(terminal)
       setStatus('connected', 'Connected')
       backoff = 250
@@ -222,7 +231,15 @@ const bootstrap = async () => {
   try {
     const response = await request('terminal/status')
     const status = await response.json()
-    cursor = Number.isSafeInteger(status.baseCursor) ? status.baseCursor : 0
+    const baseCursor = Number.isSafeInteger(status.baseCursor) ? status.baseCursor : 0
+    const nextCursor = Number.isSafeInteger(status.nextCursor) ? status.nextCursor : baseCursor
+    cursor = baseCursor
+    if (baseCursor > 0) {
+      cursor = nextCursor
+      terminal.reset()
+      ensureHerdrMouseCapture(terminal)
+      await request('terminal/restart', { method: 'POST' })
+    }
     setStatus(status.running ? 'connected' : 'connecting', status.running ? `Herdr ${status.version}` : 'Starting Herdr')
   } catch (error) {
     setStatus('error', 'Reconnecting')

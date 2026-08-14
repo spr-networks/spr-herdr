@@ -46,6 +46,7 @@ type outputSnapshot struct {
 	next    uint64
 	data    []byte
 	changed <-chan struct{}
+	stale   bool
 }
 
 func (ring *outputRing) read(cursor uint64, maximum int) outputSnapshot {
@@ -54,7 +55,12 @@ func (ring *outputRing) read(cursor uint64, maximum int) outputSnapshot {
 
 	end := ring.base + uint64(len(ring.data))
 	if cursor < ring.base {
-		cursor = ring.base
+		return outputSnapshot{
+			base:    ring.base,
+			next:    end,
+			changed: ring.changed,
+			stale:   true,
+		}
 	}
 	if cursor > end {
 		cursor = end

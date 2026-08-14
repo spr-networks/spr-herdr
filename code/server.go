@@ -133,6 +133,11 @@ func (server *terminalServer) terminalOutput(writer http.ResponseWriter, request
 	for {
 		snapshot := server.session.output.read(cursor, maxOutputBytes)
 		setCursorHeaders(writer, snapshot)
+		if snapshot.stale {
+			writer.Header().Set("X-Terminal-Reset", "required")
+			http.Error(writer, "terminal replay cursor expired", http.StatusConflict)
+			return
+		}
 		if len(snapshot.data) > 0 {
 			writer.Header().Set("Content-Type", "application/octet-stream")
 			writer.WriteHeader(http.StatusOK)

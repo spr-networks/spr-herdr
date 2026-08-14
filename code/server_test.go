@@ -1,6 +1,8 @@
 package main
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -42,5 +44,30 @@ func TestParseCursor(t *testing.T) {
 		if (err == nil) != test.ok || got != test.want {
 			t.Fatalf("parseCursor(%q) = %d, %v", test.input, got, err)
 		}
+	}
+}
+
+func TestTerminalOutputRequiresResetForExpiredCursor(t *testing.T) {
+	session := &terminalSession{output: newOutputRing(5)}
+	session.output.append([]byte("abcdefgh"))
+	server := &terminalServer{session: session}
+
+	request := httptest.NewRequest(http.MethodGet, "/terminal/output?cursor=0", nil)
+	recorder := httptest.NewRecorder()
+	server.terminalOutput(recorder, request)
+
+	response := recorder.Result()
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusConflict {
+		t.Fatalf("status = %d, want %d", response.StatusCode, http.StatusConflict)
+	}
+	if got := response.Header.Get("X-Terminal-Reset"); got != "required" {
+		t.Fatalf("X-Terminal-Reset = %q, want required", got)
+	}
+	if got := response.Header.Get("X-Terminal-Base-Cursor"); got != "3" {
+		t.Fatalf("X-Terminal-Base-Cursor = %q, want 3", got)
+	}
+	if got := response.Header.Get("X-Terminal-Next-Cursor"); got != "8" {
+		t.Fatalf("X-Terminal-Next-Cursor = %q, want 8", got)
 	}
 }

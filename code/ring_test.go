@@ -20,7 +20,7 @@ func TestOutputRingReadsByAbsoluteCursor(t *testing.T) {
 	}
 }
 
-func TestOutputRingTruncatesAndClampsStaleCursor(t *testing.T) {
+func TestOutputRingTruncatesAndRejectsStaleCursor(t *testing.T) {
 	ring := newOutputRing(5)
 	ring.append([]byte("abcdefgh"))
 
@@ -28,8 +28,8 @@ func TestOutputRingTruncatesAndClampsStaleCursor(t *testing.T) {
 	if snapshot.base != 3 || snapshot.next != 8 {
 		t.Fatalf("bounds = %d..%d, want 3..8", snapshot.base, snapshot.next)
 	}
-	if !bytes.Equal(snapshot.data, []byte("defgh")) {
-		t.Fatalf("data = %q, want defgh", snapshot.data)
+	if !snapshot.stale || len(snapshot.data) != 0 {
+		t.Fatalf("stale snapshot = %+v, want reset without partial data", snapshot)
 	}
 }
 

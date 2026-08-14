@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "test": "node test-plugin-base.mjs && node test-mouse-capture.mjs"
+    "test": "node test-plugin-base.mjs && node test-mouse-capture.mjs && node test-input-pump.mjs && node test-mouse-input.mjs"
   },
   "dependencies": {
     "@xterm/addon-fit": "0.11.0",
