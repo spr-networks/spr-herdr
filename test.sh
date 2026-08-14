@@ -46,6 +46,7 @@ mkdir -p "$test_cache" "$module_cache"
 if [ ! -d frontend/node_modules ]; then
   npm --prefix frontend ci --ignore-scripts --no-audit --no-fund
 fi
+npm --prefix frontend test
 npm --prefix frontend run build
 test -s frontend/dist/index.html
 test -s frontend/dist/app.js

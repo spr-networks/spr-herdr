@@ -1,5 +1,6 @@
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
+import { resolvePluginBase } from './plugin-base.js'
 import './app.css'
 
 const statusElement = document.getElementById('status')
@@ -16,12 +17,11 @@ let inputChunks = []
 let inputChain = Promise.resolve()
 let errorTimer = null
 
-const pluginBase = (() => {
-  if (window.SPR_API_URL && window.SPR_PLUGIN?.URI) {
-    return new URL(`plugins/${window.SPR_PLUGIN.URI}/`, window.SPR_API_URL)
-  }
-  return new URL('./', window.location.href)
-})()
+const pluginBase = resolvePluginBase({
+  apiURL: window.SPR_API_URL,
+  pluginURI: window.SPR_PLUGIN?.URI,
+  baseURI: document.baseURI
+})
 
 const endpoint = (path) => new URL(path, pluginBase).toString()
 
@@ -140,7 +140,9 @@ const fit = () => {
   resizeTimer = setTimeout(sendResize, 80)
 }
 
-new ResizeObserver(fit).observe(document.getElementById('terminal-shell'))
+if (typeof ResizeObserver === 'function') {
+  new ResizeObserver(fit).observe(document.getElementById('terminal-shell'))
+}
 window.addEventListener('resize', fit)
 
 const queueInput = (bytes) => {
@@ -249,4 +251,8 @@ const start = async () => {
   await bootstrap()
 }
 
-start()
+start().catch((error) => {
+  setStatus('error', 'Terminal failed')
+  showError(`Terminal failed: ${error.message || error}`)
+  console.error('spr-herdr terminal bootstrap failed', error)
+})
