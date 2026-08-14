@@ -135,7 +135,12 @@ func (server *terminalServer) terminalOutput(writer http.ResponseWriter, request
 		setCursorHeaders(writer, snapshot)
 		if snapshot.stale {
 			writer.Header().Set("X-Terminal-Reset", "required")
-			http.Error(writer, "terminal replay cursor expired", http.StatusConflict)
+			writeJSON(writer, http.StatusConflict, map[string]any{
+				"error":      "terminal replay cursor expired",
+				"reset":      "required",
+				"baseCursor": snapshot.base,
+				"nextCursor": snapshot.next,
+			})
 			return
 		}
 		if len(snapshot.data) > 0 {

@@ -2,6 +2,7 @@ import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { createInputPump } from './input-pump.js'
 import { createMouseInputCoalescer } from './mouse-input.js'
+import { advanceOutputCursor, readResetCursor } from './output-cursor.js'
 import { resolvePluginBase } from './plugin-base.js'
 import { ensureHerdrMouseCapture } from './mouse-capture.js'
 import './app.css'
@@ -182,11 +183,6 @@ terminal.attachCustomKeyEventHandler((event) => {
   return true
 })
 
-const readCursor = (response, name, fallback) => {
-  const parsed = Number.parseInt(response.headers.get(name) || '', 10)
-  return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : fallback
-}
-
 const poll = async () => {
   let backoff = 250
   while (!stopped) {
@@ -194,9 +190,8 @@ const poll = async () => {
       const response = await fetch(endpoint(`terminal/output?cursor=${cursor}`), {
         cache: 'no-store'
       })
-      const nextCursor = readCursor(response, 'X-Terminal-Next-Cursor', cursor)
-      if (response.status === 409 && response.headers.get('X-Terminal-Reset') === 'required') {
-        cursor = nextCursor
+      if (response.status === 409) {
+        cursor = await readResetCursor(response, cursor)
         terminal.reset()
         ensureHerdrMouseCapture(terminal)
         setStatus('connecting', 'Refreshing terminal')
@@ -211,9 +206,9 @@ const poll = async () => {
         const bytes = new Uint8Array(await response.arrayBuffer())
         if (bytes.length > 0) {
           await new Promise((resolve) => terminal.write(bytes, resolve))
+          cursor = advanceOutputCursor(cursor, bytes.length)
         }
       }
-      cursor = nextCursor
       ensureHerdrMouseCapture(terminal)
       setStatus('connected', 'Connected')
       backoff = 250

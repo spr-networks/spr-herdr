@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -69,5 +70,16 @@ func TestTerminalOutputRequiresResetForExpiredCursor(t *testing.T) {
 	}
 	if got := response.Header.Get("X-Terminal-Next-Cursor"); got != "8" {
 		t.Fatalf("X-Terminal-Next-Cursor = %q, want 8", got)
+	}
+	var reset struct {
+		Reset      string `json:"reset"`
+		BaseCursor uint64 `json:"baseCursor"`
+		NextCursor uint64 `json:"nextCursor"`
+	}
+	if err := json.NewDecoder(response.Body).Decode(&reset); err != nil {
+		t.Fatal(err)
+	}
+	if reset.Reset != "required" || reset.BaseCursor != 3 || reset.NextCursor != 8 {
+		t.Fatalf("reset payload = %+v, want required with bounds 3..8", reset)
 	}
 }
