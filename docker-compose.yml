@@ -25,7 +25,6 @@ services:
       herdrnet:
     volumes:
       - "${SUPERDIR:-/home/spr/super}/configs/plugins/spr-herdr:/home/herdr"
-      - "${SUPERDIR:-/home/spr/super}/state/plugins/spr-herdr:/state/plugins/spr-herdr"
 
 networks:
   herdrnet:

@@ -18,6 +18,10 @@ grep -Fq 'krun.vsock_path: "/state/plugins/spr-herdr/socket.sock"' docker-compos
 grep -Fq 'SPR_KRUN_PLUGIN_SOCKET: /run/spr-herdr/ui.sock' docker-compose-kvm.yml
 grep -Fq 'com.docker.network.bridge.inhibit_ipv4: "true"' docker-compose-kvm.yml
 grep -Fq '${SUPERDIR:-/home/spr/super}/configs/plugins/spr-herdr:/home/herdr' docker-compose.yml
+if grep -Fq '${SUPERDIR:-/home/spr/super}/state/plugins/spr-herdr:/state/plugins/spr-herdr' docker-compose.yml; then
+  echo "spr-herdr must not mount host runtime state into the guest" >&2
+  exit 1
+fi
 if grep -Fq '/state/plugins/spr-herdr/home:/home/herdr' docker-compose.yml; then
   echo "spr-herdr home must live in configs/plugins, not state/plugins" >&2
   exit 1
