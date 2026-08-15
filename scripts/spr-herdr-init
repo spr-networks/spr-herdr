@@ -53,6 +53,6 @@ exec /usr/local/bin/spr-krun-init \
       -- \
       /usr/local/bin/spr-herdr-terminal \
         -socket "$plugin_socket" \
-        -command /usr/local/bin/herdr \
+        -command /usr/local/bin/spr-herdr-sandbox \
         -workdir /home/herdr/workspace \
         -version "${HERDR_VERSION:-unknown}"

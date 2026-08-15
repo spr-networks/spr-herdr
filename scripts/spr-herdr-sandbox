@@ -1,0 +1,42 @@
+#!/bin/bash
+set -euo pipefail
+
+if [ "$(id -u)" -eq 0 ]; then
+    echo "spr-herdr sandbox must run as an unprivileged user" >&2
+    exit 1
+fi
+
+home_dir=/home/herdr
+
+if [ "$#" -eq 0 ]; then
+    set -- /usr/local/bin/herdr
+fi
+
+runtime_dir="/run/user/$(id -u)"
+
+exec /usr/bin/bwrap \
+    --die-with-parent \
+    --new-session \
+    --unshare-user \
+    --uid "$(id -u)" \
+    --gid "$(id -g)" \
+    --unshare-pid \
+    --unshare-ipc \
+    --unshare-uts \
+    --ro-bind / / \
+    --bind "$home_dir" "$home_dir" \
+    --tmpfs /run \
+    --perms 0700 \
+    --dir "$runtime_dir" \
+    --perms 1777 \
+    --tmpfs /tmp \
+    --proc /proc \
+    --dev /dev \
+    --chdir /home/herdr/workspace \
+    --setenv HOME "$home_dir" \
+    --setenv XDG_RUNTIME_DIR "$runtime_dir" \
+    --unsetenv SPR_KRUN_PLUGIN_SOCKET \
+    --unsetenv SPR_KRUN_VSOCK_PORT \
+    --cap-drop ALL \
+    -- \
+    "$@"

@@ -11,6 +11,9 @@ spr-herdr packages these unmodified or separately maintained components:
   and bold JetBrainsMono Nerd Font release files.
 - Starship 1.26.0 (https://github.com/starship/starship), ISC License.
 - creack/pty (https://github.com/creack/pty), MIT.
+- Bubblewrap (https://github.com/containers/bubblewrap), LGPL-2.0-or-later.
+  The Ubuntu package retains its copyright and license metadata in the image.
 
-License texts are included in LICENSES/. The spr-herdr integration code is
-licensed under the repository's MIT LICENSE.
+Bundled dependency license texts are included in LICENSES/. Ubuntu package
+license metadata remains under /usr/share/doc in the image. The spr-herdr
+integration code is licensed under the repository's MIT LICENSE.

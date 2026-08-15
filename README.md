@@ -19,8 +19,8 @@ SPR sandboxed iframe
   -> /plugins/spr-herdr/terminal/*
   -> /state/plugins/spr-herdr/socket.sock on the SPR host
   -> libkrun vsock port 4040
-  -> /run/spr-herdr/ui.sock in the guest
-  -> spr-herdr-terminal -> PTY -> herdr
+  -> /run/spr-herdr/ui.sock in the guest supervisor
+  -> spr-herdr-terminal -> PTY -> Bubblewrap -> herdr
 ```
 
 Output uses an authenticated long poll with an absolute replay cursor. Input
@@ -34,6 +34,15 @@ The terminal service keeps a 4 MiB output ring. Reloading the SPR page
 reconstructs the current screen from that ring and reuses the same PTY. If two
 browser tabs open the plugin, they mirror the same terminal; input from both is
 serialized into that shared PTY.
+
+Herdr and every shell or agent it starts run in a second layer of Linux
+namespaces created by Bubblewrap. That process tree receives an empty `/run`,
+a private `/proc`, a minimal `/dev`, a read-only view of the image, and writable
+access only to its persistent home and private temporary files. The terminal
+supervisor remains outside that namespace so it can own the guest-local UI
+socket; the Herdr process tree cannot see that socket or the runtime-injected
+`/run/spr-krun` mount. SPR's socket path and vsock-port environment variables
+are also removed before Herdr starts.
 
 The terminal bundles JetBrainsMono Nerd Font and uses Omarchy's default Tokyo
 Night palette. Herdr follows that ANSI palette with Omarchy's compact pane
@@ -94,6 +103,11 @@ runtime transport state and does not contain the persistent Herdr home.
   `/plugins/spr-herdr`.
 - The terminal service and Herdr run as UID/GID 10000 with all Linux
   capabilities removed and `no-new-privileges` enabled.
+- Herdr and all descendants additionally run inside Bubblewrap mount, user,
+  PID, IPC, and UTS namespaces. `/run` and `/proc` are replaced rather than
+  inherited, while networking remains shared so the existing SPR device policy
+  continues to apply. Failure to create the sandbox prevents Herdr from
+  starting.
 - The guest appears as one SPR-managed device with MAC
   `02:53:50:52:4b:16`, private interface `spr-herdr`, and only the declared
   `wan` and `dns` policies.
@@ -147,6 +161,8 @@ bundle and guest conventions.
   Nerd Font 3.5.0 under the SIL Open Font License 1.1.
 - [starship/starship](https://github.com/starship/starship), ISC.
 - [creack/pty](https://github.com/creack/pty), MIT.
+- [containers/bubblewrap](https://github.com/containers/bubblewrap),
+  LGPL-2.0-or-later, installed from the pinned Ubuntu snapshot.
 - [spr-networks/spr-krun-plugin](https://github.com/spr-networks/spr-krun-plugin),
   the guest-side vsock bridge and init contract.
 

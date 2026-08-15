@@ -91,7 +91,7 @@ RUN set -eux; \
     printf 'APT::Install-Recommends "false";\nAcquire::Check-Valid-Until "false";\n' > /etc/apt/apt.conf.d/99reproducible; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-      curl git jq less nano openssh-client passwd procps \
+      bubblewrap curl git jq less nano openssh-client passwd procps \
       ripgrep tzdata unzip vim-tiny; \
     rm -rf /var/lib/apt/lists/* /var/log/* /var/cache/ldconfig/aux-cache; \
     groupadd --gid 10000 herdr; \
@@ -102,6 +102,7 @@ COPY --from=herdr-downloader /herdr /usr/local/bin/herdr
 COPY --from=herdr-downloader /starship /usr/local/bin/starship
 COPY --from=terminal-builder /spr-herdr-terminal /usr/local/bin/spr-herdr-terminal
 COPY --chmod=0755 scripts/spr-herdr-init /usr/local/bin/spr-herdr-init
+COPY --chmod=0755 scripts/spr-herdr-sandbox /usr/local/bin/spr-herdr-sandbox
 COPY config/ /usr/share/spr-herdr/
 COPY LICENSE NOTICE /usr/share/doc/spr-herdr/
 COPY LICENSES/ /usr/share/doc/spr-herdr/LICENSES/

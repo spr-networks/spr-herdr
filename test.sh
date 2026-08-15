@@ -37,7 +37,7 @@ if grep -Eq '(^|[[:space:]])ports:|(^|[[:space:]])network_mode:[[:space:]]*host'
   exit 1
 fi
 
-bash -n build_docker_compose.sh config/bashrc scripts/spr-herdr-init update-pins.sh
+bash -n build_docker_compose.sh config/bashrc scripts/spr-herdr-init scripts/spr-herdr-sandbox update-pins.sh
 
 test_cache="${TMPDIR:-/tmp}/spr-herdr-go-cache"
 module_cache="${TMPDIR:-/tmp}/spr-herdr-go-mod-cache"
@@ -71,6 +71,20 @@ grep -Fq "background: '#1a1b26'" frontend/src/app.js
 grep -Fq 'format = "[$directory$git_branch$git_status]($style)$character"' config/starship.toml
 grep -Fq 'if [ ! -e /home/herdr/.bashrc ]; then' scripts/spr-herdr-init
 grep -Fq 'if [ ! -e /home/herdr/.config/starship.toml ]; then' scripts/spr-herdr-init
+grep -Fq 'bubblewrap curl git jq' Dockerfile
+grep -Fq -- '-command /usr/local/bin/spr-herdr-sandbox' scripts/spr-herdr-init
+grep -Fq -- '--unshare-user' scripts/spr-herdr-sandbox
+grep -Fq -- '--unshare-pid' scripts/spr-herdr-sandbox
+grep -Fq -- '--ro-bind / /' scripts/spr-herdr-sandbox
+grep -Fq -- '--tmpfs /run' scripts/spr-herdr-sandbox
+grep -Fq -- '--proc /proc' scripts/spr-herdr-sandbox
+grep -Fq -- '--unsetenv SPR_KRUN_PLUGIN_SOCKET' scripts/spr-herdr-sandbox
+grep -Fq -- '--unsetenv SPR_KRUN_VSOCK_PORT' scripts/spr-herdr-sandbox
+grep -Fq -- '--cap-drop ALL' scripts/spr-herdr-sandbox
+if grep -Eq -- '--(bind|ro-bind|dev-bind)[[:space:]]+/run([[:space:]]|$)' scripts/spr-herdr-sandbox; then
+  echo "spr-herdr sandbox must not expose the guest runtime directory" >&2
+  exit 1
+fi
 grep -Fq 'cosign attest --yes --type slsaprovenance1' .github/workflows/docker-image.yml
 grep -Fq 'cosign verify-attestation --type slsaprovenance1' .github/workflows/docker-image.yml
 if grep -Fq 'uses: actions/attest-build-provenance' .github/workflows/docker-image.yml; then
