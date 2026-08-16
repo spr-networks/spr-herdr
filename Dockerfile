@@ -27,6 +27,7 @@ RUN --mount=type=tmpfs,target=/root/.npm \
     test -s dist/index.html && test -s dist/app.js && test -s dist/app.css
 
 FROM ${GO_REF} AS terminal-builder
+ARG TARGETARCH
 WORKDIR /src
 COPY code/go.mod code/go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod go mod download
@@ -35,7 +36,10 @@ COPY --from=frontend /frontend/dist/ ./ui/
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=tmpfs,target=/root/.cache/go-build \
     go test ./... && \
-    CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /spr-herdr-terminal .
+    CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /spr-herdr-terminal . && \
+    go run ./cmd/seccomp-profile \
+      -arch "${TARGETARCH}" \
+      -output /spr-herdr-vsock-seccomp.bpf
 
 FROM krun-plugin AS herdr-downloader
 ARG TARGETARCH
@@ -104,6 +108,7 @@ COPY --from=terminal-builder /spr-herdr-terminal /usr/local/bin/spr-herdr-termin
 COPY --chmod=0755 scripts/spr-herdr-init /usr/local/bin/spr-herdr-init
 COPY --chmod=0755 scripts/spr-herdr-sandbox /usr/local/bin/spr-herdr-sandbox
 COPY config/ /usr/share/spr-herdr/
+COPY --from=terminal-builder /spr-herdr-vsock-seccomp.bpf /usr/share/spr-herdr/vsock-seccomp.bpf
 COPY LICENSE NOTICE /usr/share/doc/spr-herdr/
 COPY LICENSES/ /usr/share/doc/spr-herdr/LICENSES/
 

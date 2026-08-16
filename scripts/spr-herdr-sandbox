@@ -13,6 +13,8 @@ if [ "$#" -eq 0 ]; then
 fi
 
 runtime_dir="/run/user/$(id -u)"
+seccomp_profile=/usr/share/spr-herdr/vsock-seccomp.bpf
+exec 3<"$seccomp_profile"
 
 exec /usr/bin/bwrap \
     --die-with-parent \
@@ -23,13 +25,57 @@ exec /usr/bin/bwrap \
     --unshare-pid \
     --unshare-ipc \
     --unshare-uts \
-    --ro-bind / / \
+    --ro-bind /usr /usr \
+    --symlink usr/bin /bin \
+    --symlink usr/sbin /sbin \
+    --symlink usr/lib /lib \
+    --symlink usr/lib64 /lib64 \
+    --dir /etc \
+    --ro-bind /etc/alternatives /etc/alternatives \
+    --ro-bind /etc/bash.bashrc /etc/bash.bashrc \
+    --ro-bind /etc/ca-certificates.conf /etc/ca-certificates.conf \
+    --ro-bind /etc/group /etc/group \
+    --ro-bind /etc/host.conf /etc/host.conf \
+    --ro-bind /etc/hostname /etc/hostname \
+    --ro-bind /etc/hosts /etc/hosts \
+    --ro-bind /etc/ld.so.cache /etc/ld.so.cache \
+    --ro-bind /etc/ld.so.conf /etc/ld.so.conf \
+    --ro-bind /etc/ld.so.conf.d /etc/ld.so.conf.d \
+    --ro-bind /etc/nsswitch.conf /etc/nsswitch.conf \
+    --ro-bind /etc/passwd /etc/passwd \
+    --ro-bind /etc/profile /etc/profile \
+    --ro-bind /etc/profile.d /etc/profile.d \
+    --ro-bind /etc/resolv.conf /etc/resolv.conf \
+    --ro-bind /etc/shells /etc/shells \
+    --ro-bind /etc/ssh /etc/ssh \
+    --ro-bind /etc/ssl /etc/ssl \
+    --ro-bind /etc/timezone /etc/timezone \
+    --ro-bind-try /etc/environment /etc/environment \
+    --ro-bind-try /etc/gai.conf /etc/gai.conf \
+    --ro-bind-try /etc/gitconfig /etc/gitconfig \
+    --ro-bind-try /etc/inputrc /etc/inputrc \
+    --ro-bind-try /etc/nanorc /etc/nanorc \
+    --ro-bind-try /etc/networks /etc/networks \
+    --ro-bind-try /etc/protocols /etc/protocols \
+    --ro-bind-try /etc/services /etc/services \
+    --ro-bind-try /etc/vim /etc/vim \
+    --symlink ../usr/lib/os-release /etc/os-release \
+    --symlink /proc/mounts /etc/mtab \
+    --symlink ../usr/share/zoneinfo/Etc/UTC /etc/localtime \
+    --dir /home \
     --bind "$home_dir" "$home_dir" \
     --tmpfs /run \
     --perms 0700 \
     --dir "$runtime_dir" \
+    --perms 0755 \
+    --dir /run/lock \
     --perms 1777 \
     --tmpfs /tmp \
+    --dir /var \
+    --perms 1777 \
+    --dir /var/tmp \
+    --symlink /run /var/run \
+    --symlink /run/lock /var/lock \
     --proc /proc \
     --dev /dev \
     --chdir /home/herdr/workspace \
@@ -37,6 +83,7 @@ exec /usr/bin/bwrap \
     --setenv XDG_RUNTIME_DIR "$runtime_dir" \
     --unsetenv SPR_KRUN_PLUGIN_SOCKET \
     --unsetenv SPR_KRUN_VSOCK_PORT \
+    --seccomp 3 \
     --cap-drop ALL \
     -- \
     "$@"

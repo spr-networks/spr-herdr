@@ -37,12 +37,16 @@ serialized into that shared PTY.
 
 Herdr and every shell or agent it starts run in a second layer of Linux
 namespaces created by Bubblewrap. That process tree receives an empty `/run`,
-a private `/proc`, a minimal `/dev`, a read-only view of the image, and writable
-access only to its persistent home and private temporary files. The terminal
+a private `/proc`, a minimal `/dev`, an allowlisted read-only userland, and
+writable access only to its persistent home and private temporary files. The
+guest root is not mounted into the sandbox. Paths such as `/root`, `/sys`,
+`/opt`, `/mnt`, and arbitrary guest mounts do not exist there. The terminal
 supervisor remains outside that namespace so it can own the guest-local UI
 socket; the Herdr process tree cannot see that socket or the runtime-injected
 `/run/spr-krun` mount. SPR's socket path and vsock-port environment variables
-are also removed before Herdr starts.
+are also removed before Herdr starts. A seccomp filter denies `AF_VSOCK`
+socket creation, so panes cannot bypass the hidden Unix socket by dialing the
+host bridge directly. Normal IPv4, IPv6, and Unix sockets remain available.
 
 The terminal bundles JetBrainsMono Nerd Font and uses Omarchy's default Tokyo
 Night palette. Herdr follows that ANSI palette with Omarchy's compact pane
@@ -104,9 +108,12 @@ runtime transport state and does not contain the persistent Herdr home.
 - The terminal service and Herdr run as UID/GID 10000 with all Linux
   capabilities removed and `no-new-privileges` enabled.
 - Herdr and all descendants additionally run inside Bubblewrap mount, user,
-  PID, IPC, and UTS namespaces. `/run` and `/proc` are replaced rather than
-  inherited, while networking remains shared so the existing SPR device policy
-  continues to apply. Failure to create the sandbox prevents Herdr from
+  PID, IPC, and UTS namespaces. The guest root is replaced with an allowlist of
+  `/usr`, required read-only system configuration, the persistent Herdr home,
+  and private runtime filesystems. Networking remains shared so the existing
+  SPR device policy continues to apply. `AF_VSOCK` and `io_uring_setup` are
+  denied to close both direct and io_uring-based vsock creation paths. Failure
+  to create the sandbox or install its seccomp filter prevents Herdr from
   starting.
 - The guest appears as one SPR-managed device with MAC
   `02:53:50:52:4b:16`, private interface `spr-herdr`, and only the declared
