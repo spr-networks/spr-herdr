@@ -14,9 +14,12 @@ fi
 
 runtime_dir="/run/user/$(id -u)"
 seccomp_profile=/usr/share/spr-herdr/vsock-seccomp.bpf
+terminal_type="${TERM:-xterm-256color}"
+color_terminal="${COLORTERM:-truecolor}"
 exec 3<"$seccomp_profile"
+unset SPR_KRUN_PLUGIN_SOCKET SPR_KRUN_VSOCK_PORT
 
-exec /usr/bin/bwrap \
+exec -c /usr/bin/bwrap \
     --die-with-parent \
     --new-session \
     --unshare-user \
@@ -79,10 +82,22 @@ exec /usr/bin/bwrap \
     --proc /proc \
     --dev /dev \
     --chdir /home/herdr/workspace \
+    --clearenv \
     --setenv HOME "$home_dir" \
+    --setenv USER herdr \
+    --setenv LOGNAME herdr \
+    --setenv SHELL /bin/bash \
+    --setenv PATH /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+    --setenv TERM "$terminal_type" \
+    --setenv COLORTERM "$color_terminal" \
+    --setenv LANG C.UTF-8 \
+    --setenv PWD /home/herdr/workspace \
+    --setenv XDG_CONFIG_HOME /home/herdr/.config \
+    --setenv XDG_CACHE_HOME /home/herdr/.cache \
+    --setenv XDG_DATA_HOME /home/herdr/.local/share \
     --setenv XDG_RUNTIME_DIR "$runtime_dir" \
-    --unsetenv SPR_KRUN_PLUGIN_SOCKET \
-    --unsetenv SPR_KRUN_VSOCK_PORT \
+    --setenv HERDR_CONFIG_PATH /home/herdr/.config/herdr/config.toml \
+    --setenv HERDR_DISABLE_SOUND 1 \
     --seccomp 3 \
     --cap-drop ALL \
     -- \

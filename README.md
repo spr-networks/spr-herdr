@@ -44,9 +44,12 @@ guest root is not mounted into the sandbox. Paths such as `/root`, `/sys`,
 supervisor remains outside that namespace so it can own the guest-local UI
 socket; the Herdr process tree cannot see that socket or the runtime-injected
 `/run/spr-krun` mount. SPR's socket path and vsock-port environment variables
-are also removed before Herdr starts. A seccomp filter denies `AF_VSOCK`
-socket creation, so panes cannot bypass the hidden Unix socket by dialing the
-host bridge directly. Normal IPv4, IPv6, and Unix sockets remain available.
+are removed before Bubblewrap starts. Bubblewrap itself receives an empty
+environment, and Herdr receives an explicit allowlist containing only its home,
+user identity, terminal, locale, XDG paths, executable path, and packaged
+configuration. A seccomp filter denies `AF_VSOCK` socket creation, so panes
+cannot bypass the hidden Unix socket by dialing the host bridge directly.
+Normal IPv4, IPv6, and Unix sockets remain available.
 
 The terminal bundles JetBrainsMono Nerd Font and uses Omarchy's default Tokyo
 Night palette. Herdr follows that ANSI palette with Omarchy's compact pane

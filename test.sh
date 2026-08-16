@@ -79,8 +79,10 @@ grep -Fq -- '--ro-bind /usr /usr' scripts/spr-herdr-sandbox
 grep -Fq -- '--bind "$home_dir" "$home_dir"' scripts/spr-herdr-sandbox
 grep -Fq -- '--tmpfs /run' scripts/spr-herdr-sandbox
 grep -Fq -- '--proc /proc' scripts/spr-herdr-sandbox
-grep -Fq -- '--unsetenv SPR_KRUN_PLUGIN_SOCKET' scripts/spr-herdr-sandbox
-grep -Fq -- '--unsetenv SPR_KRUN_VSOCK_PORT' scripts/spr-herdr-sandbox
+grep -Fq 'unset SPR_KRUN_PLUGIN_SOCKET SPR_KRUN_VSOCK_PORT' scripts/spr-herdr-sandbox
+grep -Fq 'exec -c /usr/bin/bwrap' scripts/spr-herdr-sandbox
+grep -Fq -- '--clearenv' scripts/spr-herdr-sandbox
+grep -Fq -- '--setenv HERDR_CONFIG_PATH /home/herdr/.config/herdr/config.toml' scripts/spr-herdr-sandbox
 grep -Fq -- '--seccomp 3' scripts/spr-herdr-sandbox
 grep -Fq 'vsock-seccomp.bpf' Dockerfile
 grep -Fq -- '--cap-drop ALL' scripts/spr-herdr-sandbox
