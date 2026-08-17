@@ -196,30 +196,23 @@ func (session *terminalSession) resize(columns, rows uint16) error {
 	return pty.Setsize(session.pty, &pty.Winsize{Cols: columns, Rows: rows})
 }
 
-func (session *terminalSession) restart() error {
+func (session *terminalSession) redraw() error {
 	session.mu.Lock()
-	process := session.process
-	session.mu.Unlock()
-	if process == nil {
-		return nil
-	}
-	if err := process.Signal(syscall.SIGTERM); err != nil && !errors.Is(err, os.ErrProcessDone) {
-		return err
+	defer session.mu.Unlock()
+	if !session.running || session.pty == nil {
+		return errors.New("terminal is not attached")
 	}
 
-	go func(target *os.Process) {
-		select {
-		case <-session.ctx.Done():
-		case <-time.After(2 * time.Second):
-			session.mu.Lock()
-			stillCurrent := session.process == target
-			session.mu.Unlock()
-			if stillCurrent {
-				_ = target.Kill()
-			}
-		}
-	}(process)
-	return nil
+	rows := session.rows
+	if rows < ^uint16(0) {
+		rows++
+	} else {
+		rows--
+	}
+	if err := pty.Setsize(session.pty, &pty.Winsize{Cols: session.columns, Rows: rows}); err != nil {
+		return err
+	}
+	return pty.Setsize(session.pty, &pty.Winsize{Cols: session.columns, Rows: session.rows})
 }
 
 func (session *terminalSession) status() terminalStatus {

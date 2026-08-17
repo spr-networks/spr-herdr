@@ -2,13 +2,13 @@ import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { createInputPump } from './input-pump.js'
 import { createMouseInputCoalescer } from './mouse-input.js'
-import { advanceOutputCursor, readResetCursor } from './output-cursor.js'
+import { advanceOutputCursor, readReplayCursor } from './output-cursor.js'
 import { resolvePluginBase } from './plugin-base.js'
 import { ensureHerdrMouseCapture } from './mouse-capture.js'
 import './app.css'
 
 const statusElement = document.getElementById('status')
-const reconnectButton = document.getElementById('reconnect')
+const redrawButton = document.getElementById('redraw')
 const errorElement = document.getElementById('error')
 const terminalElement = document.getElementById('terminal')
 
@@ -191,11 +191,11 @@ const poll = async () => {
         cache: 'no-store'
       })
       if (response.status === 409) {
-        cursor = await readResetCursor(response, cursor)
+        cursor = await readReplayCursor(response, cursor)
         terminal.reset()
         ensureHerdrMouseCapture(terminal)
-        setStatus('connecting', 'Refreshing terminal')
-        await request('terminal/restart', { method: 'POST' })
+        setStatus('connecting', 'Replaying terminal')
+        await request('terminal/redraw', { method: 'POST' })
         continue
       }
       if (!response.ok && response.status !== 204) {
@@ -227,13 +227,11 @@ const bootstrap = async () => {
     const response = await request('terminal/status')
     const status = await response.json()
     const baseCursor = Number.isSafeInteger(status.baseCursor) ? status.baseCursor : 0
-    const nextCursor = Number.isSafeInteger(status.nextCursor) ? status.nextCursor : baseCursor
     cursor = baseCursor
     if (baseCursor > 0) {
-      cursor = nextCursor
       terminal.reset()
       ensureHerdrMouseCapture(terminal)
-      await request('terminal/restart', { method: 'POST' })
+      await request('terminal/redraw', { method: 'POST' })
     }
     setStatus(status.running ? 'connected' : 'connecting', status.running ? `Herdr ${status.version}` : 'Starting Herdr')
   } catch (error) {
@@ -242,16 +240,18 @@ const bootstrap = async () => {
   await poll()
 }
 
-reconnectButton.addEventListener('click', async () => {
-  reconnectButton.disabled = true
-  setStatus('connecting', 'Reattaching')
+redrawButton.addEventListener('click', async () => {
+  redrawButton.disabled = true
+  setStatus('connecting', 'Redrawing')
+  terminal.reset()
+  ensureHerdrMouseCapture(terminal)
   try {
-    await request('terminal/restart', { method: 'POST' })
+    await request('terminal/redraw', { method: 'POST' })
   } catch (error) {
-    showError(`Reattach failed: ${error.message}`)
+    showError(`Redraw failed: ${error.message}`)
   } finally {
     setTimeout(() => {
-      reconnectButton.disabled = false
+      redrawButton.disabled = false
     }, 1200)
   }
 })

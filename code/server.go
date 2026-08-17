@@ -49,7 +49,7 @@ func (server *terminalServer) handler() http.Handler {
 	mux.HandleFunc("/terminal/output", server.terminalOutput)
 	mux.HandleFunc("/terminal/input", server.terminalInput)
 	mux.HandleFunc("/terminal/resize", server.terminalResize)
-	mux.HandleFunc("/terminal/restart", server.terminalRestart)
+	mux.HandleFunc("/terminal/redraw", server.terminalRedraw)
 	return server.securityHeaders(mux)
 }
 
@@ -219,15 +219,15 @@ func (server *terminalServer) terminalResize(writer http.ResponseWriter, request
 	writer.WriteHeader(http.StatusNoContent)
 }
 
-func (server *terminalServer) terminalRestart(writer http.ResponseWriter, request *http.Request) {
+func (server *terminalServer) terminalRedraw(writer http.ResponseWriter, request *http.Request) {
 	if !requireMethod(writer, request, http.MethodPost) {
 		return
 	}
-	if err := server.session.restart(); err != nil {
-		http.Error(writer, "could not reconnect terminal", http.StatusInternalServerError)
+	if err := server.session.redraw(); err != nil {
+		http.Error(writer, err.Error(), http.StatusConflict)
 		return
 	}
-	writer.WriteHeader(http.StatusAccepted)
+	writer.WriteHeader(http.StatusNoContent)
 }
 
 func writeJSON(writer http.ResponseWriter, status int, value any) {

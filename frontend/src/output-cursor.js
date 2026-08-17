@@ -5,13 +5,13 @@ export const readCursorHeader = (response, name, fallback) => {
   return validCursor(parsed) ? parsed : fallback
 }
 
-export const readResetCursor = async (response, fallback) => {
-  let cursor = readCursorHeader(response, 'X-Terminal-Next-Cursor', fallback)
+export const readReplayCursor = async (response, fallback) => {
+  let cursor = readCursorHeader(response, 'X-Terminal-Base-Cursor', fallback)
   try {
     const payload = await response.json()
-    if (validCursor(payload?.nextCursor)) cursor = payload.nextCursor
+    if (validCursor(payload?.baseCursor)) cursor = payload.baseCursor
   } catch {
-    // Older servers only supplied cursor metadata as response headers.
+    // Servers may supply cursor metadata only through response headers.
   }
   return cursor
 }

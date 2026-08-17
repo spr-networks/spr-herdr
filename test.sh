@@ -65,7 +65,12 @@ grep -Fq 'pane_scrollbars = false' config/config.toml
 grep -Fq 'ensureHerdrMouseCapture(terminal)' frontend/src/app.js
 grep -Fq 'createInputPump' frontend/src/app.js
 grep -Fq 'createMouseInputCoalescer' frontend/src/app.js
-grep -Fq 'readResetCursor' frontend/src/app.js
+grep -Fq 'readReplayCursor' frontend/src/app.js
+grep -Fq "request('terminal/redraw', { method: 'POST' })" frontend/src/app.js
+if grep -Fq 'terminal/restart' frontend/src/app.js code/server.go; then
+  echo "browser reconnect must not restart the Bubblewrap session" >&2
+  exit 1
+fi
 grep -Fq 'minifyIdentifiers: false' frontend/build.mjs
 grep -Fq "background: '#1a1b26'" frontend/src/app.js
 grep -Fq 'format = "[$directory$git_branch$git_status]($style)$character"' config/starship.toml

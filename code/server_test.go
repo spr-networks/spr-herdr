@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestDecodeTerminalSize(t *testing.T) {
@@ -81,5 +82,44 @@ func TestTerminalOutputRequiresResetForExpiredCursor(t *testing.T) {
 	}
 	if reset.Reset != "required" || reset.BaseCursor != 3 || reset.NextCursor != 8 {
 		t.Fatalf("reset payload = %+v, want required with bounds 3..8", reset)
+	}
+}
+
+func TestTerminalRedrawPreservesSession(t *testing.T) {
+	session := newTerminalSession("/bin/cat", nil, t.TempDir(), "test", 64*1024)
+	session.start()
+	defer session.close()
+
+	deadline := time.Now().Add(2 * time.Second)
+	status := session.status()
+	for !status.Running && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+		status = session.status()
+	}
+	if !status.Running {
+		t.Fatal("terminal session did not start")
+	}
+
+	server, err := newTerminalServer(session)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request := httptest.NewRequest(http.MethodPost, "/terminal/redraw", nil)
+	recorder := httptest.NewRecorder()
+	server.handler().ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusNoContent {
+		t.Fatalf("redraw status = %d, want %d", recorder.Code, http.StatusNoContent)
+	}
+
+	after := session.status()
+	if after.PID != status.PID || after.Generation != status.Generation {
+		t.Fatalf("redraw changed session from pid %d generation %d to pid %d generation %d", status.PID, status.Generation, after.PID, after.Generation)
+	}
+
+	request = httptest.NewRequest(http.MethodPost, "/terminal/restart", nil)
+	recorder = httptest.NewRecorder()
+	server.handler().ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusNotFound {
+		t.Fatalf("restart status = %d, want %d", recorder.Code, http.StatusNotFound)
 	}
 }
